@@ -1,0 +1,17 @@
+{
+  "name": "truck-parking-pro",
+  "version": "1.0.0",
+  "description": "A 2D truck + trailer parking game",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": ["game", "truck", "parking", "trailer"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truck Parking Pro</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Title Screen -->
+        <div id="title-screen" class="screen active">
+            <div class="title-content">
+                <h1>TRUCK PARKING</h1>
+                <h2>PRO</h2>
+                <p class="subtitle">Master the art of trailer backing</p>
+                <div class="button-group">
+                    <button id="start-btn" class="btn btn-primary">START GAME</button>
+                    <button id="levels-btn" class="btn btn-secondary">SELECT LEVEL</button>
+                </div>
+            </div>
+            <div class="controls-hint">
+                <p><span>ARROW KEYS</span> or <span>WASD</span> to control</p>
+            </div>
+        </div>
+
+        <!-- Level Select Screen -->
+        <div id="level-select-screen" class="screen">
+            <div class="screen-header">
+                <button id="back-to-title" class="btn btn-back">← BACK</button>
+                <h2>SELECT LEVEL</h2>
+            </div>
+            <div id="level-grid" class="level-grid">
+                <!-- Levels will be populated dynamically -->
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="game-header">
+                <div class="level-info">
+                    <span id="current-level-name">Level 1</span>
+                </div>
+                <button id="restart-btn" class="btn btn-small">RESTART</button>
+                <button id="menu-btn" class="btn btn-small">MENU</button>
+            </div>
+            <div class="game-content">
+                <canvas id="game-canvas"></canvas>
+                <div class="control-panel">
+                    <!-- Gear Indicator -->
+                    <div class="gear-indicator">
+                        <div class="gear-label">GEAR</div>
+                        <div class="gear-display">
+                            <div class="gear-option" data-gear="D">D</div>
+                            <div class="gear-option active" data-gear="N">N</div>
+                            <div class="gear-option" data-gear="R">R</div>
+                        </div>
+                    </div>
+                    <!-- Steering Wheel -->
+                    <div class="steering-indicator">
+                        <div class="steering-label">STEERING</div>
+                        <div class="steering-wheel-container">
+                            <div class="steering-wheel" id="steering-wheel">
+                                <div class="steering-spoke"></div>
+                                <div class="steering-spoke"></div>
+                                <div class="steering-center"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Speed Indicator -->
+                    <div class="speed-indicator">
+                        <div class="speed-label">SPEED</div>
+                        <div class="speed-bar-container">
+                            <div class="speed-bar" id="speed-bar"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="game-footer">
+                <p>↑↓ Accelerate/Brake | ←→ Steer</p>
+            </div>
+        </div>
+
+        <!-- Win Screen -->
+        <div id="win-screen" class="screen overlay">
+            <div class="overlay-content win">
+                <h2>LEVEL COMPLETE!</h2>
+                <p>You parked the trailer successfully!</p>
+                <button id="next-level-btn" class="btn btn-primary">NEXT LEVEL</button>
+                <button id="replay-btn" class="btn btn-secondary">REPLAY</button>
+                <button id="win-menu-btn" class="btn btn-secondary">MENU</button>
+            </div>
+        </div>
+
+        <!-- Lose Screen -->
+        <div id="lose-screen" class="screen overlay">
+            <div class="overlay-content lose">
+                <h2>COLLISION!</h2>
+                <p>You hit an obstacle. Try again!</p>
+                <button id="retry-btn" class="btn btn-primary">RETRY</button>
+                <button id="lose-menu-btn" class="btn btn-secondary">MENU</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
+
