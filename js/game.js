@@ -62,6 +62,7 @@ export class Game {
         this.loadLevel();
         this.gameState = 'playing';
         this.input.reset();
+        this.renderer.clearTrail();
     }
     
     nextLevel() {
@@ -158,6 +159,12 @@ export class Game {
         // Clear canvas
         this.renderer.clear();
         
+        // Draw trail path
+        this.renderer.drawTrail();
+        
+        // Draw additional parking bays
+        this.renderer.drawParkingBays(this.currentLevel.parkingZone);
+        
         // Draw parking zone
         this.renderer.drawParkingZone(this.currentLevel.parkingZone);
         
@@ -166,6 +173,11 @@ export class Game {
         
         // Draw truck and trailer
         this.renderer.drawTruck(this.truck);
+        
+        // Add trail point
+        if (Math.abs(this.truck.speed) > 0.1) {
+            this.renderer.addTrailPoint(this.truck.x, this.truck.y);
+        }
         
         // Draw jackknife warning if applicable
         this.renderer.drawJacknifeWarning(this.truck);
