@@ -1,14 +1,14 @@
-// Game State Manager
-import { Truck } from './truck.js';
+// Game State Manager - Single Responsibility: Game state and flow control
+import { TruckCab } from './entities/TruckCab.js';
 import { CollisionDetector } from './collision.js';
-import { Renderer } from './renderer.js';
+import { GameRenderer } from './renderers/GameRenderer.js';
 import { LevelLoader } from './levels.js';
 import { InputHandler } from './input.js';
 
 export class Game {
     constructor(canvas) {
         this.canvas = canvas;
-        this.renderer = new Renderer(canvas);
+        this.renderer = new GameRenderer(canvas);
         this.collision = new CollisionDetector();
         this.levelLoader = new LevelLoader();
         this.input = new InputHandler();
@@ -22,7 +22,6 @@ export class Game {
     }
     
     init() {
-        // Set canvas size
         this.renderer.resize();
     }
     
@@ -38,12 +37,12 @@ export class Game {
             return false;
         }
         
-        // Initialize truck at level starting position
-        this.truck = new Truck(
-            this.currentLevel.truck.x,
-            this.currentLevel.truck.y,
-            this.currentLevel.truck.angle
-        );
+        // Initialize truck with level config
+        this.truck = new TruckCab({
+            x: this.currentLevel.truck.x,
+            y: this.currentLevel.truck.y,
+            angle: this.currentLevel.truck.angle
+        });
         
         this.collisionCooldown = 0;
         
@@ -54,6 +53,7 @@ export class Game {
         if (this.loadLevel(levelIndex)) {
             this.gameState = 'playing';
             this.input.reset();
+            this.renderer.clearTrail();
             requestAnimationFrame(this.gameLoop);
         }
     }
@@ -78,33 +78,24 @@ export class Game {
             return;
         }
         
-        // Update
         this.update();
-        
-        // Render
         this.render();
         
-        // Continue loop
         requestAnimationFrame(this.gameLoop);
     }
     
     update() {
-        // Update collision cooldown
         if (this.collisionCooldown > 0) {
             this.collisionCooldown--;
         }
         
-        // Get input and update truck
         const inputState = this.input.getInput();
         this.truck.update(inputState);
         
         // Notify UI of truck state
         this.onUpdate(this.truck);
         
-        // Check collisions
         this.checkCollisions();
-        
-        // Check win condition
         this.checkWinCondition();
     }
     
@@ -147,7 +138,6 @@ export class Game {
         const trailerCorners = this.truck.getTrailerCorners();
         
         if (this.collision.checkParkingSuccess(trailerCorners, this.currentLevel.parkingZone)) {
-            // Additional check: truck must be nearly stopped
             if (Math.abs(this.truck.speed) < 0.5) {
                 this.gameState = 'win';
                 this.onGameWin();
@@ -156,22 +146,11 @@ export class Game {
     }
     
     render() {
-        // Clear canvas
         this.renderer.clear();
-        
-        // Draw trail path
         this.renderer.drawTrail();
-        
-        // Draw additional parking bays
         this.renderer.drawParkingBays(this.currentLevel.parkingZone);
-        
-        // Draw parking zone
         this.renderer.drawParkingZone(this.currentLevel.parkingZone);
-        
-        // Draw obstacles
         this.renderer.drawObstacles(this.currentLevel.obstacles);
-        
-        // Draw truck and trailer
         this.renderer.drawTruck(this.truck);
         
         // Add trail point
@@ -179,10 +158,8 @@ export class Game {
             this.renderer.addTrailPoint(this.truck.x, this.truck.y);
         }
         
-        // Draw jackknife warning if applicable
         this.renderer.drawJacknifeWarning(this.truck);
         
-        // Draw effects based on state
         if (this.gameState === 'lose') {
             this.renderer.drawCollisionEffect();
         } else if (this.gameState === 'win') {
@@ -190,7 +167,7 @@ export class Game {
         }
     }
     
-    // Callbacks for UI - will be set by main.js
+    // Callbacks for UI
     onGameWin() {}
     onGameLose() {}
     onUpdate(truck) {}
@@ -215,4 +192,3 @@ export class Game {
         return this.levelLoader.isLastLevel();
     }
 }
-
