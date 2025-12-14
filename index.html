@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Truck Parking Pro</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -11,12 +12,16 @@
         <!-- Title Screen -->
         <div id="title-screen" class="screen active">
             <div class="title-content">
-                <h1>TRUCK PARKING</h1>
-                <h2>PRO</h2>
-                <p class="subtitle">Master the art of trailer backing</p>
+                <h1>TRUCK SIMULATOR</h1>
+                <h2>REAL WORLD</h2>
+                <p class="subtitle">Explore the world with a semi-truck</p>
                 <div class="button-group">
-                    <button id="start-btn" class="btn btn-primary">START GAME</button>
-                    <button id="levels-btn" class="btn btn-secondary">SELECT LEVEL</button>
+                    <button id="world-map-btn" class="btn btn-accent btn-large">🌍 DRIVE IN REAL WORLD</button>
+                    <div class="secondary-buttons">
+                        <button id="levels-btn" class="btn btn-secondary">PARKING LEVELS</button>
+                        <button id="load-map-btn" class="btn btn-secondary">LOAD DXF</button>
+                    </div>
+                    <input type="file" id="map-file-input" accept=".dxf" style="display: none;">
                 </div>
             </div>
             <div class="controls-hint">
@@ -40,39 +45,90 @@
             <div class="game-header">
                 <div class="level-info">
                     <span id="current-level-name">Level 1</span>
+                    <span id="parking-target" class="parking-target">PARK: TRAILER</span>
                 </div>
+                <button id="settings-btn" class="btn btn-small btn-icon">⚙</button>
                 <button id="restart-btn" class="btn btn-small">RESTART</button>
                 <button id="menu-btn" class="btn btn-small">MENU</button>
             </div>
+            
+            <!-- Guide Lines Settings Panel -->
+            <div id="guide-settings" class="settings-panel hidden">
+                <div class="settings-header">
+                    <span>Guide Lines</span>
+                    <button id="close-settings" class="btn-close">×</button>
+                </div>
+                <div class="settings-content">
+                    <!-- Truck (Green) Settings -->
+                    <div class="setting-group">
+                        <div class="setting-title green-text">TRUCK (Green)</div>
+                        <label class="setting-toggle">
+                            <input type="checkbox" id="truck-enabled" checked>
+                            <span>Enabled</span>
+                        </label>
+                        <label class="setting-toggle">
+                            <input type="checkbox" id="truck-front" checked>
+                            <span>Front</span>
+                        </label>
+                        <label class="setting-toggle">
+                            <input type="checkbox" id="truck-back" checked>
+                            <span>Back</span>
+                        </label>
+                    </div>
+                    <!-- Trailer (Red) Settings -->
+                    <div class="setting-group">
+                        <div class="setting-title red-text">TRAILER (Red)</div>
+                        <label class="setting-toggle">
+                            <input type="checkbox" id="trailer-enabled" checked>
+                            <span>Enabled</span>
+                        </label>
+                        <label class="setting-toggle">
+                            <input type="checkbox" id="trailer-front">
+                            <span>Front</span>
+                        </label>
+                        <label class="setting-toggle">
+                            <input type="checkbox" id="trailer-back" checked>
+                            <span>Back</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
             <div class="game-content">
-                <canvas id="game-canvas"></canvas>
-                <div class="control-panel">
+                <!-- Left Control Panel with Steering Wheel -->
+                <div class="control-panel left-panel">
+                    <!-- Large Steering Wheel -->
+                    <div class="steering-indicator">
+                        <div class="steering-wheel-container">
+                            <div class="steering-wheel" id="steering-wheel">
+                                <div class="steering-spoke spoke-top"></div>
+                                <div class="steering-spoke spoke-left"></div>
+                                <div class="steering-spoke spoke-right"></div>
+                                <div class="steering-center">
+                                    <div class="steering-logo"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <!-- Gear Indicator -->
                     <div class="gear-indicator">
-                        <div class="gear-label">GEAR</div>
                         <div class="gear-display">
                             <div class="gear-option" data-gear="D">D</div>
                             <div class="gear-option active" data-gear="N">N</div>
                             <div class="gear-option" data-gear="R">R</div>
                         </div>
                     </div>
-                    <!-- Steering Wheel -->
-                    <div class="steering-indicator">
-                        <div class="steering-label">STEERING</div>
-                        <div class="steering-wheel-container">
-                            <div class="steering-wheel" id="steering-wheel">
-                                <div class="steering-spoke"></div>
-                                <div class="steering-spoke"></div>
-                                <div class="steering-center"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Speed Indicator -->
+                </div>
+                
+                <canvas id="game-canvas"></canvas>
+                
+                <!-- Right Panel with Speed -->
+                <div class="control-panel right-panel">
                     <div class="speed-indicator">
                         <div class="speed-label">SPEED</div>
                         <div class="speed-bar-container">
                             <div class="speed-bar" id="speed-bar"></div>
                         </div>
+                        <div class="speed-value" id="speed-value">0</div>
                     </div>
                 </div>
             </div>

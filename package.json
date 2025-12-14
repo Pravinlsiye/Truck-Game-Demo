@@ -8,10 +8,19 @@
     "build": "vite build",
     "preview": "vite preview"
   },
-  "keywords": ["game", "truck", "parking", "trailer"],
+  "keywords": [
+    "game",
+    "truck",
+    "parking",
+    "trailer"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "vite": "^7.0.0"
+  },
+  "dependencies": {
+    "dxf-parser": "^1.1.2",
+    "leaflet": "^1.9.4"
   }
 }

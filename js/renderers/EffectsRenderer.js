@@ -7,6 +7,29 @@ export class EffectsRenderer extends BaseRenderer {
         this.canvas = canvas;
         this.trailPoints = [];
         this.maxTrailPoints = 500;
+        
+        // Guide line settings
+        this.guideSettings = {
+            truck: {
+                enabled: true,
+                front: true,
+                back: true
+            },
+            trailer: {
+                enabled: true,
+                front: false,  // Trailer only needs back lines by default
+                back: true
+            }
+        };
+    }
+    
+    // Update guide settings
+    setGuideSettings(settings) {
+        this.guideSettings = { ...this.guideSettings, ...settings };
+    }
+    
+    getGuideSettings() {
+        return this.guideSettings;
     }
     
     addTrailPoint(x, y) {
@@ -37,35 +60,125 @@ export class EffectsRenderer extends BaseRenderer {
         this.ctx.stroke();
     }
     
-    renderGuideLines(trailerCorners) {
+    renderGuideLines(truck) {
+        // Red lines - TRAILER path
+        if (this.guideSettings.trailer.enabled) {
+            this.renderTrailerGuides(truck);
+        }
+        
+        // Green lines - TRUCK path
+        if (this.guideSettings.truck.enabled) {
+            this.renderTruckGuides(truck);
+        }
+    }
+    
+    renderTrailerGuides(truck) {
+        const trailerCorners = truck.getTrailerCorners();
         if (trailerCorners.length < 4) return;
         
-        const rearLeft = trailerCorners[3];
-        const rearRight = trailerCorners[2];
-        const frontLeft = trailerCorners[0];
+        const settings = this.guideSettings.trailer;
+        if (!settings.front && !settings.back) return;
         
-        // Calculate direction
+        // Corners of trailer
+        const frontLeft = trailerCorners[0];
+        const frontRight = trailerCorners[1];
+        const rearRight = trailerCorners[2];
+        const rearLeft = trailerCorners[3];
+        
+        // Direction trailer is pointing (front to back)
         const dx = rearLeft.x - frontLeft.x;
         const dy = rearLeft.y - frontLeft.y;
         const len = Math.sqrt(dx * dx + dy * dy);
         const dirX = dx / len;
         const dirY = dy / len;
         
-        this.ctx.setLineDash([5, 5]);
+        this.ctx.setLineDash([8, 4]);
         this.ctx.lineWidth = 2;
+        this.ctx.lineCap = 'round';
+        this.ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
         
-        // Red guide (left)
-        this.ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+        const extendLength = 800;
+        
+        // Left side
         this.ctx.beginPath();
-        this.ctx.moveTo(rearLeft.x, rearLeft.y);
-        this.ctx.lineTo(rearLeft.x + dirX * 200, rearLeft.y + dirY * 200);
+        if (settings.front) {
+            this.ctx.moveTo(frontLeft.x - dirX * extendLength, frontLeft.y - dirY * extendLength);
+            this.ctx.lineTo(frontLeft.x, frontLeft.y);
+        }
+        if (settings.back) {
+            if (!settings.front) this.ctx.moveTo(rearLeft.x, rearLeft.y);
+            else this.ctx.lineTo(rearLeft.x, rearLeft.y);
+            this.ctx.lineTo(rearLeft.x + dirX * extendLength, rearLeft.y + dirY * extendLength);
+        }
         this.ctx.stroke();
         
-        // Green guide (right)
-        this.ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
+        // Right side
         this.ctx.beginPath();
-        this.ctx.moveTo(rearRight.x, rearRight.y);
-        this.ctx.lineTo(rearRight.x + dirX * 200, rearRight.y + dirY * 200);
+        if (settings.front) {
+            this.ctx.moveTo(frontRight.x - dirX * extendLength, frontRight.y - dirY * extendLength);
+            this.ctx.lineTo(frontRight.x, frontRight.y);
+        }
+        if (settings.back) {
+            if (!settings.front) this.ctx.moveTo(rearRight.x, rearRight.y);
+            else this.ctx.lineTo(rearRight.x, rearRight.y);
+            this.ctx.lineTo(rearRight.x + dirX * extendLength, rearRight.y + dirY * extendLength);
+        }
+        this.ctx.stroke();
+        
+        this.ctx.setLineDash([]);
+    }
+    
+    renderTruckGuides(truck) {
+        const truckCorners = truck.getTruckCorners();
+        if (truckCorners.length < 4) return;
+        
+        const settings = this.guideSettings.truck;
+        if (!settings.front && !settings.back) return;
+        
+        // Corners of truck
+        const frontLeft = truckCorners[0];
+        const frontRight = truckCorners[1];
+        const rearRight = truckCorners[2];
+        const rearLeft = truckCorners[3];
+        
+        // Direction truck is pointing (back to front)
+        const dx = frontLeft.x - rearLeft.x;
+        const dy = frontLeft.y - rearLeft.y;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        const dirX = dx / len;
+        const dirY = dy / len;
+        
+        this.ctx.setLineDash([8, 4]);
+        this.ctx.lineWidth = 2;
+        this.ctx.lineCap = 'round';
+        this.ctx.strokeStyle = 'rgba(34, 197, 94, 0.7)';
+        
+        const extendLength = 800;
+        
+        // Left side
+        this.ctx.beginPath();
+        if (settings.back) {
+            this.ctx.moveTo(rearLeft.x - dirX * extendLength, rearLeft.y - dirY * extendLength);
+            this.ctx.lineTo(rearLeft.x, rearLeft.y);
+        }
+        if (settings.front) {
+            if (!settings.back) this.ctx.moveTo(frontLeft.x, frontLeft.y);
+            else this.ctx.lineTo(frontLeft.x, frontLeft.y);
+            this.ctx.lineTo(frontLeft.x + dirX * extendLength, frontLeft.y + dirY * extendLength);
+        }
+        this.ctx.stroke();
+        
+        // Right side
+        this.ctx.beginPath();
+        if (settings.back) {
+            this.ctx.moveTo(rearRight.x - dirX * extendLength, rearRight.y - dirY * extendLength);
+            this.ctx.lineTo(rearRight.x, rearRight.y);
+        }
+        if (settings.front) {
+            if (!settings.back) this.ctx.moveTo(frontRight.x, frontRight.y);
+            else this.ctx.lineTo(frontRight.x, frontRight.y);
+            this.ctx.lineTo(frontRight.x + dirX * extendLength, frontRight.y + dirY * extendLength);
+        }
         this.ctx.stroke();
         
         this.ctx.setLineDash([]);
@@ -111,22 +224,26 @@ export class EffectsRenderer extends BaseRenderer {
     }
     
     renderHitch(hitchPoint, truckRear, trailerFront) {
+        // Fifth wheel coupling - thicker connection bar
         this.ctx.beginPath();
         this.ctx.moveTo(truckRear.x, truckRear.y);
-        this.ctx.lineTo(hitchPoint.x, hitchPoint.y);
         this.ctx.lineTo(trailerFront.x, trailerFront.y);
-        this.ctx.strokeStyle = '#4b5563';
-        this.ctx.lineWidth = 6;
+        this.ctx.strokeStyle = '#374151';
+        this.ctx.lineWidth = 10;
+        this.ctx.lineCap = 'round';
         this.ctx.stroke();
         
-        // Hitch point
-        this.ctx.fillStyle = '#374151';
+        // Kingpin (hitch point)
+        this.ctx.fillStyle = '#1f2937';
         this.ctx.beginPath();
-        this.ctx.arc(hitchPoint.x, hitchPoint.y, 6, 0, Math.PI * 2);
+        this.ctx.arc(hitchPoint.x, hitchPoint.y, 8, 0, Math.PI * 2);
         this.ctx.fill();
-        this.ctx.strokeStyle = '#1f2937';
-        this.ctx.lineWidth = 2;
-        this.ctx.stroke();
+        
+        // Inner kingpin detail
+        this.ctx.fillStyle = '#4b5563';
+        this.ctx.beginPath();
+        this.ctx.arc(hitchPoint.x, hitchPoint.y, 4, 0, Math.PI * 2);
+        this.ctx.fill();
     }
 }
 

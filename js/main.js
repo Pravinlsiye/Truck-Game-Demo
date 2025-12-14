@@ -1,5 +1,9 @@
 // Main Entry Point
 import { Game } from './game.js';
+import { SettingsManager } from './managers/SettingsManager.js';
+import { GuideSettingsUI } from './ui/GuideSettingsUI.js';
+import { DXFMapLoader } from './loaders/DXFMapLoader.js';
+import { MapPicker } from './ui/MapPicker.js';
 
 class GameApp {
     constructor() {
@@ -7,6 +11,10 @@ class GameApp {
         this.screens = {};
         this.buttons = {};
         this.controlElements = {};
+        this.settingsManager = null;
+        this.guideSettingsUI = null;
+        this.mapLoader = new DXFMapLoader();
+        this.mapPicker = null;
         
         this.init();
     }
@@ -28,6 +36,22 @@ class GameApp {
         // Setup event listeners
         this.setupEventListeners();
         
+        // Initialize settings (SOLID: Dependency Inversion)
+        this.settingsManager = new SettingsManager();
+        this.guideSettingsUI = new GuideSettingsUI(this.settingsManager);
+        
+        // Subscribe to settings changes
+        this.settingsManager.subscribe((key, value) => {
+            if (key === 'guideLines') {
+                this.game.renderer.effectsRenderer.setGuideSettings(value);
+            }
+        });
+        
+        // Apply initial settings
+        this.game.renderer.effectsRenderer.setGuideSettings(
+            this.settingsManager.getGuideLineSettings()
+        );
+        
         // Populate level select
         this.populateLevelSelect();
         
@@ -47,8 +71,9 @@ class GameApp {
         
         // Buttons
         this.buttons = {
-            start: document.getElementById('start-btn'),
             levels: document.getElementById('levels-btn'),
+            loadMap: document.getElementById('load-map-btn'),
+            worldMap: document.getElementById('world-map-btn'),
             backToTitle: document.getElementById('back-to-title'),
             restart: document.getElementById('restart-btn'),
             menu: document.getElementById('menu-btn'),
@@ -58,6 +83,9 @@ class GameApp {
             retry: document.getElementById('retry-btn'),
             loseMenu: document.getElementById('lose-menu-btn')
         };
+        
+        // File input for map loading
+        this.mapFileInput = document.getElementById('map-file-input');
         
         // Other elements
         this.levelGrid = document.getElementById('level-grid');
@@ -74,8 +102,9 @@ class GameApp {
     updateControlPanel(truck) {
         if (!truck) return;
         
-        // Update steering wheel rotation (convert steering angle to degrees)
-        const steeringDegrees = (truck.steeringAngle / truck.maxSteeringAngle) * 90;
+        // Update steering wheel rotation
+        // Real steering wheel rotates ~180 degrees each direction for full lock
+        const steeringDegrees = (truck.steeringAngle / truck.maxSteeringAngle) * 180;
         if (this.controlElements.steeringWheel) {
             this.controlElements.steeringWheel.style.transform = `rotate(${steeringDegrees}deg)`;
         }
@@ -89,6 +118,13 @@ class GameApp {
             } else {
                 this.controlElements.speedBar.classList.remove('reverse');
             }
+        }
+        
+        // Update speed value display
+        const speedValue = document.getElementById('speed-value');
+        if (speedValue) {
+            const displaySpeed = Math.abs(Math.round(truck.speed * 10));
+            speedValue.textContent = displaySpeed;
         }
         
         // Update gear indicator
@@ -110,8 +146,10 @@ class GameApp {
     
     setupEventListeners() {
         // Title screen
-        this.buttons.start.addEventListener('click', () => this.startGame(0));
         this.buttons.levels.addEventListener('click', () => this.showScreen('levelSelect'));
+        this.buttons.loadMap.addEventListener('click', () => this.mapFileInput.click());
+        this.mapFileInput.addEventListener('change', (e) => this.handleMapFile(e));
+        this.buttons.worldMap.addEventListener('click', () => this.openWorldMap());
         
         // Level select
         this.buttons.backToTitle.addEventListener('click', () => this.showScreen('title'));
@@ -213,6 +251,79 @@ class GameApp {
         const levelInfo = this.game.getCurrentLevelInfo();
         if (levelInfo) {
             this.currentLevelName.textContent = `Level ${levelInfo.id}: ${levelInfo.name}`;
+            
+            // Update parking target indicator
+            const parkingTargetEl = document.getElementById('parking-target');
+            if (parkingTargetEl) {
+                const target = levelInfo.parkingTarget || 'trailer';
+                parkingTargetEl.textContent = `PARK: ${target.toUpperCase()}`;
+            }
+        }
+    }
+    
+    async handleMapFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        try {
+            // Show loading message
+            this.currentLevelName.textContent = 'Loading map...';
+            
+            // Load and parse the DXF file
+            const levelData = await this.mapLoader.load(file);
+            
+            // Add the custom level to the game
+            this.game.levelLoader.levels.push(levelData);
+            const customIndex = this.game.levelLoader.levels.length - 1;
+            
+            // Start the custom level
+            this.game.start(customIndex);
+            this.currentLevelName.textContent = `Custom: ${file.name}`;
+            this.showScreen('game');
+            
+            // Update parking target
+            const parkingTargetEl = document.getElementById('parking-target');
+            if (parkingTargetEl) {
+                parkingTargetEl.textContent = 'PARK: TRAILER';
+            }
+            
+        } catch (error) {
+            console.error('Failed to load map:', error);
+            alert('Failed to load map file: ' + error.message);
+        }
+        
+        // Reset file input
+        event.target.value = '';
+    }
+    
+    openWorldMap() {
+        // Lazy initialize map picker
+        if (!this.mapPicker) {
+            this.mapPicker = new MapPicker((levelData) => this.loadWorldMapLevel(levelData));
+        }
+        this.mapPicker.show();
+    }
+    
+    loadWorldMapLevel(levelData) {
+        // Add the custom level
+        this.game.levelLoader.levels.push(levelData);
+        const customIndex = this.game.levelLoader.levels.length - 1;
+        
+        // Start the custom level
+        this.game.start(customIndex);
+        this.currentLevelName.textContent = `World: ${levelData.name}`;
+        this.showScreen('game');
+        
+        // Update parking target or show free roam
+        const parkingTargetEl = document.getElementById('parking-target');
+        if (parkingTargetEl) {
+            if (levelData.freeRoam) {
+                parkingTargetEl.textContent = '🚛 FREE ROAM';
+                parkingTargetEl.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+            } else {
+                parkingTargetEl.textContent = 'PARK: TRAILER';
+                parkingTargetEl.style.background = '';
+            }
         }
     }
 }

@@ -17,6 +17,7 @@ export class Game {
         this.currentLevel = null;
         this.gameState = 'menu'; // menu, playing, win, lose
         this.collisionCooldown = 0;
+        this.spawnGracePeriod = 0;  // Grace period after spawning
         
         this.gameLoop = this.gameLoop.bind(this);
     }
@@ -54,6 +55,19 @@ export class Game {
             this.gameState = 'playing';
             this.input.reset();
             this.renderer.clearTrail();
+            
+            // Set world size and camera mode
+            if (this.currentLevel.worldWidth && this.currentLevel.worldHeight) {
+                this.renderer.setWorldSize(this.currentLevel.worldWidth, this.currentLevel.worldHeight);
+            } else {
+                this.renderer.setWorldSize(1200, 800);
+            }
+            
+            // Enable follow mode for free roam
+            this.renderer.setFollowMode(this.currentLevel.freeRoam || false);
+            
+            // Grace period for custom/world maps (180 frames = ~3 seconds)
+            this.spawnGracePeriod = this.currentLevel.id === 'osm-custom' ? 180 : 0;
             requestAnimationFrame(this.gameLoop);
         }
     }
@@ -63,6 +77,8 @@ export class Game {
         this.gameState = 'playing';
         this.input.reset();
         this.renderer.clearTrail();
+        // Grace period for custom/world maps on restart too
+        this.spawnGracePeriod = this.currentLevel.id === 'osm-custom' ? 180 : 0;
     }
     
     nextLevel() {
@@ -101,6 +117,10 @@ export class Game {
     
     checkCollisions() {
         if (this.collisionCooldown > 0) return;
+        if (this.spawnGracePeriod > 0) {
+            this.spawnGracePeriod--;
+            return;
+        }
         
         const truckCorners = this.truck.getTruckCorners();
         const trailerCorners = this.truck.getTrailerCorners();
@@ -118,12 +138,16 @@ export class Game {
         }
         
         // Check boundary collisions
-        if (this.collision.checkBoundaryCollision(truckCorners, this.canvas.width, this.canvas.height)) {
+        // Use world size for boundaries (larger than canvas in free roam)
+        const worldW = this.currentLevel.worldWidth || this.canvas.width;
+        const worldH = this.currentLevel.worldHeight || this.canvas.height;
+        
+        if (this.collision.checkBoundaryCollision(truckCorners, worldW, worldH)) {
             this.handleCollision();
             return;
         }
         
-        if (this.collision.checkBoundaryCollision(trailerCorners, this.canvas.width, this.canvas.height)) {
+        if (this.collision.checkBoundaryCollision(trailerCorners, worldW, worldH)) {
             this.handleCollision();
             return;
         }
@@ -135,9 +159,22 @@ export class Game {
     }
     
     checkWinCondition() {
-        const trailerCorners = this.truck.getTrailerCorners();
+        // Skip win check in free roam mode
+        if (this.currentLevel.freeRoam || !this.currentLevel.parkingZone) {
+            return;
+        }
         
-        if (this.collision.checkParkingSuccess(trailerCorners, this.currentLevel.parkingZone)) {
+        const parkingTarget = this.currentLevel.parkingTarget || 'trailer';
+        let targetCorners;
+        
+        if (parkingTarget === 'trailer') {
+            targetCorners = this.truck.getTrailerCorners();
+        } else {
+            // For 'truck' target, check both cab and trailer
+            targetCorners = this.truck.getTrailerCorners();
+        }
+        
+        if (this.collision.checkParkingSuccess(targetCorners, this.currentLevel.parkingZone)) {
             if (Math.abs(this.truck.speed) < 0.5) {
                 this.gameState = 'win';
                 this.onGameWin();
@@ -145,11 +182,31 @@ export class Game {
         }
     }
     
+    isFreeRoam() {
+        return this.currentLevel?.freeRoam || false;
+    }
+    
+    getParkingTarget() {
+        return this.currentLevel?.parkingTarget || 'trailer';
+    }
+    
     render() {
         this.renderer.clear();
+        this.renderer.drawBackground();
+        
+        // Draw roads (new)
+        if (this.currentLevel.roads) {
+            this.renderer.drawRoads(this.currentLevel.roads);
+        }
+        
         this.renderer.drawTrail();
-        this.renderer.drawParkingBays(this.currentLevel.parkingZone);
-        this.renderer.drawParkingZone(this.currentLevel.parkingZone);
+        
+        // Only draw parking zone if not in free roam
+        if (!this.currentLevel.freeRoam && this.currentLevel.parkingZone) {
+            this.renderer.drawParkingBays(this.currentLevel.parkingZone);
+            this.renderer.drawParkingZone(this.currentLevel.parkingZone);
+        }
+        
         this.renderer.drawObstacles(this.currentLevel.obstacles);
         this.renderer.drawTruck(this.truck);
         

@@ -8,11 +8,11 @@ export class TruckCab extends Vehicle {
             x: config.x,
             y: config.y,
             angle: config.angle,
-            width: config.width || 40,
-            height: config.height || 60
+            width: config.width || 36,  // Narrower cab
+            height: config.height || 50  // Shorter cab for realistic proportions
         });
         
-        // Physics config
+        // Physics config - Realistic steering
         this.physics = {
             speed: 0,
             maxSpeed: config.maxSpeed || 3,
@@ -20,22 +20,22 @@ export class TruckCab extends Vehicle {
             deceleration: config.deceleration || 0.03,
             brakeForce: config.brakeForce || 0.1,
             steeringAngle: 0,
-            maxSteeringAngle: config.maxSteeringAngle || Math.PI / 6,
-            steeringSpeed: config.steeringSpeed || 0.05,
-            steeringReturn: config.steeringReturn || 0.08
+            maxSteeringAngle: config.maxSteeringAngle || Math.PI / 4,  // 45 degrees max
+            steeringSpeed: config.steeringSpeed || 0.02,  // Slower rotation for realism
+            steeringReturn: config.steeringReturn || 0.015  // Slower return to center
         };
         
-        // Hitch config
-        this.hitchDistance = config.hitchDistance || 50;
+        // Hitch config - Semi truck has hitch at rear of cab frame
+        this.hitchDistance = config.hitchDistance || 20;  // Right at cab rear
         
-        // Create trailer
+        // Create trailer - longer for realistic 53ft container look
         this.trailer = new Trailer({
             x: config.x,
             y: config.y,
             angle: config.angle,
-            width: config.trailerWidth || 50,
-            height: config.trailerHeight || 120,
-            pivotDistance: config.trailerPivotDistance || 70
+            width: config.trailerWidth || 44,  // Slightly wider than cab
+            height: config.trailerHeight || 160,  // Much longer trailer
+            pivotDistance: config.trailerPivotDistance || 8  // Kingpin close to front
         });
         
         // Initialize trailer position
